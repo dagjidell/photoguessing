@@ -471,12 +471,13 @@ function App() {
                           <span>Correct person name</span>
                           <input
                             value={page.personName}
-                            onChange={(event) =>
+                            onChange={(event) => {
+                              const value = event.currentTarget.value
                               updatePage(page.id, (currentPage) => ({
                                 ...currentPage,
-                                personName: event.currentTarget.value,
+                                personName: value,
                               }))
-                            }
+                            }}
                             placeholder="e.g. Alex"
                           />
                         </label>
@@ -484,12 +485,13 @@ function App() {
                           <span>Optional page header</span>
                           <input
                             value={page.header}
-                            onChange={(event) =>
+                            onChange={(event) => {
+                              const value = event.currentTarget.value
                               updatePage(page.id, (currentPage) => ({
                                 ...currentPage,
-                                header: event.currentTarget.value,
+                                header: value,
                               }))
-                            }
+                            }}
                             placeholder="Optional title"
                           />
                         </label>
@@ -499,12 +501,13 @@ function App() {
                         <span>Optional description</span>
                         <textarea
                           value={page.description}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            const value = event.currentTarget.value
                             updatePage(page.id, (currentPage) => ({
                               ...currentPage,
-                              description: event.currentTarget.value,
+                              description: value,
                             }))
-                          }
+                          }}
                           rows={3}
                           placeholder="Optional intro text or clue"
                         />
@@ -516,14 +519,15 @@ function App() {
                             <span>Photo link {photoIndex + 1}</span>
                             <input
                               value={photoUrl}
-                              onChange={(event) =>
+                              onChange={(event) => {
+                                const nextValue = event.currentTarget.value
                                 updatePage(page.id, (currentPage) => ({
                                   ...currentPage,
                                   photoUrls: currentPage.photoUrls.map((value, currentIndex) =>
-                                    currentIndex === photoIndex ? event.currentTarget.value : value,
+                                    currentIndex === photoIndex ? nextValue : value,
                                   ),
                                 }))
-                              }
+                              }}
                               placeholder="https://..."
                             />
                           </label>
@@ -693,12 +697,13 @@ function App() {
               <div className="join-grid stacked-mobile">
                 <select
                   value={gameState.activePlayerId ?? ''}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const value = event.currentTarget.value
                     setGameState((currentState) => ({
                       ...currentState,
-                      activePlayerId: event.currentTarget.value || null,
+                      activePlayerId: value || null,
                     }))
-                  }
+                  }}
                 >
                   <option value="">Choose a saved player</option>
                   {gameState.players.map((player) => (
