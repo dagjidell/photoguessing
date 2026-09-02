@@ -5,7 +5,6 @@ import { onAuthStateChanged } from 'firebase/auth'
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -31,6 +30,7 @@ import {
   sanitizePages,
   scorePlayer,
   sortPlayersByScore,
+  validateGameDraft,
   type GameRecord,
   type GameStatus,
   type PersonPage,
@@ -294,8 +294,9 @@ function App() {
       return undefined
     }
 
+    const firestore = db
     const timeoutId = window.setTimeout(() => {
-      updateDoc(doc(db, 'games', playerSession.gameId, 'players', playerSession.playerId), {
+      updateDoc(doc(firestore, 'games', playerSession.gameId, 'players', playerSession.playerId), {
         [`guesses.${activeJoinedPage.id}`]: currentGuess,
         updatedAtMs: Date.now(),
       })
@@ -320,7 +321,7 @@ function App() {
     return () => window.clearTimeout(timeoutId)
   }, [guessSaveMessage])
 
-  const editorErrors = useMemo(() => (editorGame ? [] : []), [editorGame])
+  const validationErrors = useMemo(() => (editorGame ? validateGameDraft(editorGame) : []), [editorGame])
 
   const adminLeaderboard = useMemo(() => {
     if (!selectedGame) {
@@ -425,7 +426,6 @@ function App() {
     }
 
     if (options.validate) {
-      const validationErrors = buildValidationErrors(editorGame)
       if (validationErrors.length > 0) {
         setAdminError(validationErrors[0]!)
         return false
@@ -626,7 +626,7 @@ function App() {
       setJoinCode(normalizedCode)
       setDisplayName(trimmedDisplayName)
       setMode('player')
-      setJoinMessage(`Joined ${game.title}.`) 
+      setJoinMessage(`Joined ${game.title}.`)
     } catch (error) {
       setJoinError(error instanceof Error ? error.message : 'Could not join the game.')
     } finally {
@@ -753,7 +753,7 @@ function App() {
           </aside>
 
           <div className="stack-gap">
-            {isAdminUser && editorGame ? (
+            {isAdminUser && selectedGame && editorGame ? (
               <>
                 <section className="panel stack-gap">
                   <div className="panel-header compact">
@@ -797,9 +797,9 @@ function App() {
                     </label>
                   </div>
                   <p className="helper-text">Drafts can be incomplete. Publish or start the game only after every page has a correct name and three valid photo links.</p>
-                  {buildValidationErrors(editorGame).length > 0 ? (
+                  {validationErrors.length > 0 ? (
                     <ul className="error-list">
-                      {buildValidationErrors(editorGame).map((error) => (
+                      {validationErrors.map((error) => (
                         <li key={error}>{error}</li>
                       ))}
                     </ul>
@@ -1067,26 +1067,6 @@ function App() {
       )}
     </div>
   )
-}
-
-function buildValidationErrors(game: GameRecord) {
-  return sanitizePages(game.pages).reduce<string[]>((errors, page, pageIndex) => {
-    if (!game.title.trim()) {
-      errors.push('Game title is required.')
-    }
-
-    if (!page.personName.trim()) {
-      errors.push(`Page ${pageIndex + 1}: correct person name is required.`)
-    }
-
-    page.photoUrls.forEach((photoUrl, photoIndex) => {
-      if (!photoUrl) {
-        errors.push(`Page ${pageIndex + 1}: photo link ${photoIndex + 1} is required.`)
-      }
-    })
-
-    return errors
-  }, [])
 }
 
 function movePage(
