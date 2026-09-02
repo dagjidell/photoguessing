@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function googleUser() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    function gameDoc(gameId) {
+      return get(/databases/$(database)/documents/games/$(gameId));
+    }
+
+    function gameStatus(gameId) {
+      return gameDoc(gameId).data.status;
+    }
+
+    function gameOwner(gameId) {
+      return gameDoc(gameId).data.createdBy;
+    }
+
+    function ownerCanManage(gameId) {
+      return googleUser() && gameDoc(gameId).exists() && gameOwner(gameId) == request.auth.uid;
+    }
+
+    function gameIsPublic(gameId) {
+      return gameDoc(gameId).exists() && gameStatus(gameId) in ['published', 'live', 'finished'];
+    }
+
+    match /games/{gameId} {
+      allow read: if resource.data.status in ['published', 'live', 'finished']
+        || (googleUser() && resource.data.createdBy == request.auth.uid);
+      allow create: if googleUser() && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if ownerCanManage(gameId);
+
+      match /players/{playerId} {
+        allow read: if gameIsPublic(gameId) || ownerCanManage(gameId);
+        allow create: if signedIn() && request.auth.uid == playerId && gameIsPublic(gameId);
+        allow update: if (signedIn() && request.auth.uid == playerId && gameIsPublic(gameId))
+          || ownerCanManage(gameId);
+        allow delete: if ownerCanManage(gameId);
+      }
+    }
+  }
+}
